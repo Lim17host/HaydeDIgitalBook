@@ -16,7 +16,7 @@
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background: #0f1015;
             color: #ffffff;
-            touch-action: none; /* Pigilan ang default browser pull-to-refresh sa mobile */
+            touch-action: none; 
         }
 
         #canvas-container {
@@ -48,7 +48,6 @@
             max-width: 90vw;
         }
 
-        /* Modal Overlay */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -84,7 +83,6 @@
             position: relative;
         }
 
-        /* Clean Top Header */
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -136,7 +134,6 @@
             transform: scale(1.05);
         }
 
-        /* Reader Area */
         .modal-body {
             flex: 1;
             width: 100%;
@@ -159,7 +156,6 @@
             text-align: center;
         }
 
-        /* Single Readable Page Container */
         .page-wrapper {
             position: relative;
             background: #ffffff;
@@ -174,7 +170,6 @@
             margin-top: 10px;
         }
 
-        /* Page Number Badge */
         .page-number-overlay {
             position: absolute;
             bottom: 12px;
@@ -198,7 +193,6 @@
             height: auto !important;
         }
 
-        /* Navigation & Zoom Bar */
         .controls {
             position: fixed;
             bottom: 35px;
@@ -258,7 +252,6 @@
         }
     </style>
 
-    <!-- Three.js, OrbitControls & PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -268,7 +261,6 @@
     <div class="instructions">Click/Tap and drag to rotate • Tap book to read</div>
     <div id="canvas-container"></div>
 
-    <!-- PDF Viewer Modal -->
     <div class="modal-overlay" id="pdf-modal">
         <div class="modal-container">
             <div class="modal-header">
@@ -301,7 +293,6 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-        // 1. Paper Texture Generator
         function createPaperTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 256;
@@ -363,7 +354,6 @@
         fillLight.position.set(-4, -2, 3);
         scene.add(fillLight);
 
-        // Background Particles
         const starsCount = 2500;
         const starsGeometry = new THREE.BufferGeometry();
         const starPositions = new Float32Array(starsCount * 3);
@@ -379,7 +369,6 @@
         const starField = new THREE.Points(starsGeometry, starsMaterial);
         scene.add(starField);
 
-        // Function para sa Canvas Texture Overlay na may Crease
         function createCoverWithCrease(imagePath, isBackCover = false) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -421,7 +410,6 @@
             return texture;
         }
 
-        // Book Textures Loading
         const textureLoader = new THREE.TextureLoader();
         const frontCover = createCoverWithCrease('front-cover.jpg', false);
         const backCover = createCoverWithCrease('back-cover.jpg', true);
@@ -460,7 +448,6 @@
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        // Hover Effect
         window.addEventListener('pointermove', (event) => {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -470,7 +457,6 @@
             document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
         });
 
-        // 3. Single PDF Reader Setup
         const modal = document.getElementById('pdf-modal');
         const closeModalBtn = document.getElementById('close-modal');
 
@@ -524,7 +510,7 @@
 
             try {
                 loadingEl.style.display = 'block';
-                loadingEl.innerText = 'Inihahanda ang malinaw na pahina...';
+                loadingEl.innerText = 'Preparing clear page...';
                 pageWrapper.style.display = 'none';
 
                 pageNum = 1;
@@ -543,7 +529,6 @@
             }
         }
 
-        // Navigation
         document.getElementById('prev-btn').addEventListener('click', () => {
             if (pageNum <= 1 || isRendering) return;
             pageNum--;
@@ -556,7 +541,6 @@
             renderPage(pageNum);
         });
 
-        // Zoom
         document.getElementById('zoom-in').addEventListener('click', () => {
             if (currentZoom >= 2.0) return;
             currentZoom += 0.15;
@@ -569,7 +553,6 @@
             applyZoom();
         });
 
-        // --- DITO INILAGAY ANG UNIVERSAL TOUCH/MOUSE CLICK DETECTOR ---
         let pointerStartX = 0;
         let pointerStartY = 0;
 
@@ -581,11 +564,9 @@
         window.addEventListener('pointerup', (e) => {
             if (modal.classList.contains('active')) return;
 
-            // Sukatin ang galaw mula start hanggang end ng touch/click
             const diffX = Math.abs(e.clientX - pointerStartX);
             const diffY = Math.abs(e.clientY - pointerStartY);
 
-            // Kapag mas mababa sa 12 pixels ang galaw, itinuturing na "TAP" / "CLICK"
             if (diffX < 12 && diffY < 12) {
                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
