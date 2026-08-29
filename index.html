@@ -16,6 +16,7 @@
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background: #0f1015;
             color: #ffffff;
+            touch-action: none; /* Pigilan ang default browser pull-to-refresh sa mobile */
         }
 
         #canvas-container {
@@ -42,6 +43,9 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(8px);
+            text-align: center;
+            width: max-content;
+            max-width: 90vw;
         }
 
         /* Modal Overlay */
@@ -143,6 +147,7 @@
             padding: 30px 20px 100px 20px;
             overflow-y: auto;
             overflow-x: auto;
+            touch-action: pan-x pan-y;
         }
 
         #loading {
@@ -151,6 +156,7 @@
             color: #94a3b8;
             font-size: 16px;
             font-weight: 500;
+            text-align: center;
         }
 
         /* Single Readable Page Container */
@@ -259,7 +265,7 @@
 </head>
 <body>
 
-    <div class="instructions">Click and drag to rotate the 3D book</div>
+    <div class="instructions">Click/Tap and drag to rotate • Tap book to read</div>
     <div id="canvas-container"></div>
 
     <!-- PDF Viewer Modal -->
@@ -373,7 +379,7 @@
         const starField = new THREE.Points(starsGeometry, starsMaterial);
         scene.add(starField);
 
-        // Function para sa Canvas Texture Overlay na may Crease (Front & Back Cover support)
+        // Function para sa Canvas Texture Overlay na may Crease
         function createCoverWithCrease(imagePath, isBackCover = false) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -387,14 +393,11 @@
                 canvas.width = img.width || 1024;
                 canvas.height = img.height || 1400;
 
-                // 1. I-draw ang image
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                // 2. Spine Groove Position (Kaliwa pag Front, Kanan pag Back)
                 const creaseX = isBackCover ? canvas.width * 0.92 : canvas.width * 0.08; 
                 const grooveWidth = canvas.width * 0.035;
 
-                // Dark Shadow (Baon/Kanal effect)
                 const darkGradient = ctx.createLinearGradient(creaseX - grooveWidth, 0, creaseX + grooveWidth, 0);
                 darkGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
                 darkGradient.addColorStop(0.4, 'rgba(0, 0, 0, 0.45)');
@@ -404,7 +407,6 @@
                 ctx.fillStyle = darkGradient;
                 ctx.fillRect(creaseX - grooveWidth, 0, grooveWidth * 2, canvas.height);
 
-                // Light Highlight (Litaw na gilid)
                 const highlightX = isBackCover ? creaseX - (grooveWidth * 2) : creaseX + grooveWidth;
                 const highlightGradient = ctx.createLinearGradient(highlightX, 0, highlightX + grooveWidth, 0);
                 highlightGradient.addColorStop(0, isBackCover ? 'rgba(255, 255, 255, 0)' : 'rgba(255, 255, 255, 0.35)');
@@ -419,7 +421,7 @@
             return texture;
         }
 
-        // Book Textures Loading (Pati back cover gagamit na rin ng crease effect)
+        // Book Textures Loading
         const textureLoader = new THREE.TextureLoader();
         const frontCover = createCoverWithCrease('front-cover.jpg', false);
         const backCover = createCoverWithCrease('back-cover.jpg', true);
@@ -458,7 +460,8 @@
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        window.addEventListener('mousemove', (event) => {
+        // Hover Effect
+        window.addEventListener('pointermove', (event) => {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -514,7 +517,10 @@
         }
 
         async function initPDF() {
-            if (pdfDoc) return;
+            if (pdfDoc) {
+                renderPage(pageNum);
+                return;
+            }
 
             try {
                 loadingEl.style.display = 'block';
@@ -563,16 +569,34 @@
             applyZoom();
         });
 
-        // Open Modal
-        window.addEventListener('click', () => {
+        // --- DITO INILAGAY ANG UNIVERSAL TOUCH/MOUSE CLICK DETECTOR ---
+        let pointerStartX = 0;
+        let pointerStartY = 0;
+
+        window.addEventListener('pointerdown', (e) => {
+            pointerStartX = e.clientX;
+            pointerStartY = e.clientY;
+        });
+
+        window.addEventListener('pointerup', (e) => {
             if (modal.classList.contains('active')) return;
 
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObject(book);
+            // Sukatin ang galaw mula start hanggang end ng touch/click
+            const diffX = Math.abs(e.clientX - pointerStartX);
+            const diffY = Math.abs(e.clientY - pointerStartY);
 
-            if (intersects.length > 0) {
-                modal.classList.add('active');
-                initPDF();
+            // Kapag mas mababa sa 12 pixels ang galaw, itinuturing na "TAP" / "CLICK"
+            if (diffX < 12 && diffY < 12) {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObject(book);
+
+                if (intersects.length > 0) {
+                    modal.classList.add('active');
+                    initPDF();
+                }
             }
         });
 
