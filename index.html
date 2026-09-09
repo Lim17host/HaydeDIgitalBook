@@ -557,7 +557,7 @@
                 const targetHeight = availableHeight;
                 const targetWidth = (originalViewport.width / originalViewport.height) * targetHeight;
 
-                loadingEl.innerText = 'Rinender ang mga pahina...';
+                loadingEl.innerText = 'Preparing book pages...';
 
                 for (let i = 1; i <= totalPdfPages; i++) {
                     const page = await pdf.getPage(i);
