@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Thesis Book - Minimal Interactive Reader</title>
+    <title>3D Thesis Book - Interactive Flipbook Reader Pro</title>
     <style>
         * {
             box-sizing: border-box;
@@ -17,6 +17,7 @@
             background: #090a0f;
             color: #ffffff;
             touch-action: none; 
+            user-select: none;
         }
 
         #canvas-container {
@@ -46,14 +47,13 @@
             text-align: center;
             letter-spacing: 0.5px;
         }
-
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(5, 6, 9, 0.88);
+            background: rgba(5, 6, 9, 0.94);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -61,7 +61,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            backdrop-filter: blur(16px);
+            backdrop-filter: blur(18px);
         }
 
         .modal-overlay.active {
@@ -70,52 +70,68 @@
         }
 
         .modal-container {
-            width: 92vw;
-            height: 92vh;
-            background: rgba(18, 20, 29, 0.75);
-            border-radius: 24px;
+            width: 100vw;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 1px 1px rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: radial-gradient(circle at 50% 40%, #1e1b4b 0%, #090a0f 85%);
             position: relative;
-            backdrop-filter: blur(20px);
+        }
+
+        .modal-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70vw;
+            height: 70vh;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+            pointer-events: none;
+            z-index: 1;
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 30px;
-            background: rgba(12, 14, 20, 0.6);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 12px 24px;
+            background: rgba(12, 14, 20, 0.85);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
             z-index: 50;
-            width: 100%;
+            height: 52px;
         }
 
         .modal-title {
             font-size: 15px;
-            font-weight: 500;
-            color: #f1f5f9;
+            font-weight: 600;
+            color: #ffffff;
             display: flex;
             align-items: center;
-            gap: 12px;
-            letter-spacing: 0.3px;
+            gap: 10px;
+            letter-spacing: 0.5px;
         }
 
         .modal-title::before {
             content: '';
             display: inline-block;
-            width: 7px;
-            height: 7px;
-            background: #3b82f6;
+            width: 8px;
+            height: 8px;
+            background: #6366f1;
             border-radius: 50%;
-            box-shadow: 0 0 12px #3b82f6;
+            box-shadow: 0 0 12px #6366f1;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .close-btn {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.08);
             color: #94a3b8;
             border: 1px solid rgba(255, 255, 255, 0.1);
             width: 32px;
@@ -130,7 +146,7 @@
         }
 
         .close-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.25);
             color: #ef4444;
             border-color: rgba(239, 68, 68, 0.4);
             transform: rotate(90deg);
@@ -140,148 +156,196 @@
             flex: 1;
             width: 100%;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
             position: relative;
-            padding: 40px 20px 100px 20px;
-            overflow-y: auto;
-            overflow-x: auto;
-            touch-action: pan-x pan-y;
+            overflow: hidden;
+            padding: 0;
+            z-index: 2;
         }
 
         #loading {
             position: absolute;
-            top: 45%;
-            color: #64748b;
-            font-size: 14px;
-            font-weight: 500;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 600;
             text-align: center;
+            z-index: 10;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            background: rgba(15, 16, 21, 0.6);
+            padding: 12px 24px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+        }
+
+        .zoom-viewport {
+            transition: transform 0.2s ease-out;
+            transform-origin: center center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.85));
+        }
+
+        .flipbook-wrapper {
+            background: transparent;
+            border-radius: 4px;
+        }
+
+        .page {
+            background-color: #fcfbf9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .page.--left::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 45px;
+            height: 100%;
+            background: linear-gradient(to left, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .page.--right::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 45px;
+            height: 100%;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.08);
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .page-number-printed {
+            position: absolute;
+            bottom: 14px;
+            font-family: 'Georgia', 'Garamond', 'Times New Roman', serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: #333333; 
+            z-index: 10;
+            pointer-events: none;
+            user-select: none;
             letter-spacing: 0.5px;
         }
 
-        .page-wrapper {
-            position: relative;
-
-            background: #fbf8ee; 
-            padding: 24px;
-            border-radius: 12px;
-            
-            border: 1px solid rgba(212, 197, 169, 0.8);
-            box-shadow: 
-                0 20px 50px rgba(0, 0, 0, 0.7), 
-                0 0 0 1px rgba(255, 255, 255, 0.1),
-                inset 0 0 30px rgba(180, 160, 120, 0.2); 
-
-            margin-bottom: 20px;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            display: none;
-            transform-origin: top center;
-            margin-top: 10px;
+        .page.--left .page-number-printed {
+            left: 20px; 
         }
 
-        .page-wrapper:hover {
-            transform: translateY(-3px) scale(1.002);
-            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.8), 0 0 25px rgba(212, 197, 169, 0.3);
+        .page.--right .page-number-printed {
+            right: 20px; 
         }
 
-        .page-number-overlay {
-            position: absolute;
-            bottom: 12px;
-            right: 18px;
-            background: rgba(15, 23, 42, 0.08);
-            color: #475569;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            font-family: system-ui, -apple-system, sans-serif;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            pointer-events: none;
-            z-index: 5;
-            backdrop-filter: blur(4px);
-        }
-
-        canvas {
-            display: block;
-            max-width: 100%;
-            height: auto !important;
-            border-radius: 4px;
-            filter: sepia(15%) contrast(102%) brightness(98%);
+        canvas.page-canvas {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
         }
 
         .controls {
             position: fixed;
-            bottom: 35px;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             align-items: center;
-            gap: 10px;
-            background: rgba(15, 17, 26, 0.85);
+            gap: 8px;
+            background: rgba(15, 16, 21, 0.9);
             padding: 8px 18px;
-            border-radius: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(16px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-            z-index: 60;
-            transition: all 0.3s ease;
-        }
-
-        .controls:hover {
-            border-color: rgba(59, 130, 246, 0.4);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(59, 130, 246, 0.15);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            z-index: 100;
         }
 
         .btn {
             background: rgba(255, 255, 255, 0.08);
             color: #f1f5f9;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 7px 16px;
-            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 6px 14px;
+            border-radius: 18px;
             cursor: pointer;
             font-size: 12px;
-            font-weight: 500;
+            font-weight: 600;
             transition: all 0.2s ease;
         }
 
-        .btn:hover {
-            background: #3b82f6;
+        .btn:hover { 
+            background: #6366f1; 
             color: #ffffff;
-            border-color: #3b82f6;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            border-color: #6366f1;
         }
 
         .btn-zoom {
             background: transparent;
             border: none;
-            color: #94a3b8;
-            padding: 6px 10px;
+            padding: 6px 8px;
         }
 
-        .btn-zoom:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            box-shadow: none;
-        }
-
-        .page-info {
-            color: #94a3b8;
+        .page-control-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
             font-size: 12px;
-            font-weight: 500;
-            min-width: 90px;
+            color: #94a3b8;
+        }
+
+        .page-input {
+            width: 38px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
             text-align: center;
+            border-radius: 6px;
+            padding: 3px 0;
+            font-size: 12px;
+            font-weight: 600;
+            outline: none;
+        }
+
+        .page-input:focus {
+            border-color: #6366f1;
+            background: rgba(255, 255, 255, 0.18);
         }
 
         .divider {
             width: 1px;
-            height: 16px;
-            background: rgba(255, 255, 255, 0.12);
-            margin: 0 2px;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.18);
+            margin: 0 4px;
         }
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
 </head>
 <body>
 
@@ -291,26 +355,34 @@
     <div class="modal-overlay" id="pdf-modal">
         <div class="modal-container">
             <div class="modal-header">
-                <div class="modal-title">The Contemporary World</div>
-                <button class="close-btn" id="close-modal">&times;</button>
+                <span class="modal-title">The Contemporary World</span>
+                <div class="header-actions">
+                    <button class="btn" id="fullscreen-btn">⛶ Fullscreen</button>
+                    <button class="close-btn" id="close-modal">&times;</button>
+                </div>
             </div>
-
+            
             <div class="modal-body" id="modal-body">
-                <div id="loading">Inihahanda ang malinaw na pahina...</div>
-
-                <div class="page-wrapper" id="page-wrapper">
-                    <canvas id="pdf-canvas"></canvas>
-                    <span class="page-number-overlay" id="page-overlay-num">1</span>
+                <div id="loading">Preparing book pages...</div>
+                
+                <div class="zoom-viewport" id="zoom-viewport">
+                    <div id="book" class="flipbook-wrapper" style="display:none;"></div>
                 </div>
 
                 <div class="controls" id="controls" style="display: none;">
                     <button class="btn" id="prev-btn">‹ Prev</button>
-                    <span class="page-info" id="page-num">Page 1</span>
+                    
+                    <div class="page-control-group">
+                        <input type="text" id="page-input" class="page-input" value="1" />
+                        <span id="page-total">/ 0</span>
+                    </div>
+
                     <button class="btn" id="next-btn">Next ›</button>
                     
                     <div class="divider"></div>
                     
                     <button class="btn btn-zoom" id="zoom-out">− Zoom</button>
+                    <span id="zoom-val" style="font-size: 12px; color: #f1f5f9; min-width:40px; text-align: center;">100%</span>
                     <button class="btn btn-zoom" id="zoom-in">+ Zoom</button>
                 </div>
             </div>
@@ -334,16 +406,42 @@
                 ctx.fillRect(0, i, 256, 1);
             }
 
-            const gradient = ctx.createLinearGradient(0, 0, 15, 0);
-            gradient.addColorStop(0, 'rgba(0,0,0,0.18)');
-            gradient.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 256, 256);
-
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
             texture.repeat.set(1, 4);
+            return texture;
+        }
+
+        function createCoverWithCrease(imagePath, isBackCover = false) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const texture = new THREE.CanvasTexture(canvas);
+
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = imagePath;
+
+            img.onload = () => {
+                canvas.width = img.width || 1024;
+                canvas.height = img.height || 1400;
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                const creaseX = isBackCover ? canvas.width * 0.92 : canvas.width * 0.08; 
+                const grooveWidth = canvas.width * 0.035;
+
+                const darkGradient = ctx.createLinearGradient(creaseX - grooveWidth, 0, creaseX + grooveWidth, 0);
+                darkGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                darkGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.5)');
+                darkGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+                ctx.fillStyle = darkGradient;
+                ctx.fillRect(creaseX - grooveWidth, 0, grooveWidth * 2, canvas.height);
+
+                texture.needsUpdate = true;
+            };
+
             return texture;
         }
 
@@ -371,16 +469,9 @@
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
         dirLight.position.set(4, 8, 5);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.bias = -0.0001;
         scene.add(dirLight);
 
-        const fillLight = new THREE.PointLight(0x3b82f6, 0.3, 10);
-        fillLight.position.set(-4, -2, 3);
-        scene.add(fillLight);
-
-        const starsCount = 2500;
+        const starsCount = 2000;
         const starsGeometry = new THREE.BufferGeometry();
         const starPositions = new Float32Array(starsCount * 3);
 
@@ -391,50 +482,9 @@
         }
 
         starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-        const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, transparent: true, opacity: 0.85 });
+        const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, transparent: true, opacity: 0.8 });
         const starField = new THREE.Points(starsGeometry, starsMaterial);
         scene.add(starField);
-
-        function createCoverWithCrease(imagePath, isBackCover = false) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const texture = new THREE.CanvasTexture(canvas);
-
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.src = imagePath;
-
-            img.onload = () => {
-                canvas.width = img.width || 1024;
-                canvas.height = img.height || 1400;
-
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                const creaseX = isBackCover ? canvas.width * 0.92 : canvas.width * 0.08; 
-                const grooveWidth = canvas.width * 0.035;
-
-                const darkGradient = ctx.createLinearGradient(creaseX - grooveWidth, 0, creaseX + grooveWidth, 0);
-                darkGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-                darkGradient.addColorStop(0.4, 'rgba(0, 0, 0, 0.45)');
-                darkGradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.6)');
-                darkGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-                ctx.fillStyle = darkGradient;
-                ctx.fillRect(creaseX - grooveWidth, 0, grooveWidth * 2, canvas.height);
-
-                const highlightX = isBackCover ? creaseX - (grooveWidth * 2) : creaseX + grooveWidth;
-                const highlightGradient = ctx.createLinearGradient(highlightX, 0, highlightX + grooveWidth, 0);
-                highlightGradient.addColorStop(0, isBackCover ? 'rgba(255, 255, 255, 0)' : 'rgba(255, 255, 255, 0.35)');
-                highlightGradient.addColorStop(1, isBackCover ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0)');
-
-                ctx.fillStyle = highlightGradient;
-                ctx.fillRect(highlightX, 0, grooveWidth, canvas.height);
-
-                texture.needsUpdate = true;
-            };
-
-            return texture;
-        }
 
         const textureLoader = new THREE.TextureLoader();
         const frontCover = createCoverWithCrease('front-cover.jpg', false);
@@ -442,7 +492,7 @@
         const spineCover = textureLoader.load('spine-cover.jpg');
         const paperEdgeTexture = createPaperTexture();
 
-        const paperMaterial = new THREE.MeshStandardMaterial({ map: paperEdgeTexture, roughness: 0.8, metalness: 0.1 });
+        const paperMaterial = new THREE.MeshStandardMaterial({ map: paperEdgeTexture, roughness: 0.8 });
 
         const materials = [
             paperMaterial,
@@ -457,19 +507,10 @@
         const geometry = new THREE.BoxGeometry(2, 2.8, 0.28);
         const book = new THREE.Mesh(geometry, materials);
         book.castShadow = true;
-        book.receiveShadow = true;
         bookGroup.add(book);
 
         bookGroup.rotation.y = Math.PI / 4;
         scene.add(bookGroup);
-
-        const shadowPlaneGeo = new THREE.PlaneGeometry(10, 10);
-        const shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.4 });
-        const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
-        shadowPlane.rotation.x = -Math.PI / 2;
-        shadowPlane.position.y = -1.5;
-        shadowPlane.receiveShadow = true;
-        scene.add(shadowPlane);
 
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
@@ -483,100 +524,143 @@
             document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
         });
 
+        const pdfUrl = 'THE-CONTEMPORARY-WORLD.pdf'; 
+        let pageFlip = null;
+        let currentZoom = 1.0;
+        let totalPdfPages = 0;
+
         const modal = document.getElementById('pdf-modal');
         const closeModalBtn = document.getElementById('close-modal');
+        const zoomViewport = document.getElementById('zoom-viewport');
+        const zoomValSpan = document.getElementById('zoom-val');
+        const pageInput = document.getElementById('page-input');
+        const pageTotal = document.getElementById('page-total');
 
-        const pdfFile = 'THE-CONTEMPORARY-WORLD.pdf';
+        async function initFlipbook() {
+            if (pageFlip) return;
 
-        let pdfDoc = null;
-        let pageNum = 1;
-        let currentZoom = 1.0;
-        let isRendering = false;
-
-        const canvas = document.getElementById('pdf-canvas');
-        const ctx = canvas.getContext('2d');
-        const pageWrapper = document.getElementById('page-wrapper');
-        const loadingEl = document.getElementById('loading');
-        const controlsEl = document.getElementById('controls');
-        const pageNumSpan = document.getElementById('page-num');
-        const pageOverlayNum = document.getElementById('page-overlay-num');
-
-        async function renderPage(num) {
-            isRendering = true;
-            const page = await pdfDoc.getPage(num);
-
-            const viewport = page.getViewport({ scale: 2.8 });
-            const outputScale = window.devicePixelRatio || 1;
-
-            canvas.width = Math.floor(viewport.width * outputScale);
-            canvas.height = Math.floor(viewport.height * outputScale);
-            canvas.style.width = Math.floor(viewport.width * 0.45) + "px";
-            canvas.style.height = "auto";
-
-            const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
-
-            await page.render({ canvasContext: ctx, transform: transform, viewport: viewport }).promise;
-            isRendering = false;
-
-            pageNumSpan.innerText = `Page ${num} of ${pdfDoc.numPages}`;
-            pageOverlayNum.innerText = num;
-        }
-
-        function applyZoom() {
-            pageWrapper.style.transform = "scale(" + currentZoom + ")";
-            var extraHeight = pageWrapper.offsetHeight * (currentZoom - 1);
-            pageWrapper.style.marginBottom = currentZoom > 1 ? (extraHeight + 40) + "px" : "40px";
-        }
-
-        async function initPDF() {
-            if (pdfDoc) {
-                renderPage(pageNum);
-                return;
-            }
+            const loadingEl = document.getElementById('loading');
+            const bookContainer = document.getElementById('book');
+            const controlsEl = document.getElementById('controls');
+            const modalBody = document.getElementById('modal-body');
 
             try {
-                loadingEl.style.display = 'block';
-                loadingEl.innerText = 'Preparing clear page...';
-                pageWrapper.style.display = 'none';
+                loadingEl.innerText = 'Kinakarga ang PDF file...';
+                const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+                totalPdfPages = pdf.numPages;
+                pageTotal.innerText = `/ ${totalPdfPages}`;
 
-                pageNum = 1;
-                currentZoom = 1.0;
+                const firstPage = await pdf.getPage(1);
+                const originalViewport = firstPage.getViewport({ scale: 1.0 });
 
-                pdfDoc = await pdfjsLib.getDocument(pdfFile).promise;
-                await renderPage(pageNum);
+                const availableHeight = modalBody.clientHeight - 60; 
+                const targetHeight = availableHeight;
+                const targetWidth = (originalViewport.width / originalViewport.height) * targetHeight;
+
+                loadingEl.innerText = 'Rinender ang mga pahina...';
+
+                for (let i = 1; i <= totalPdfPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 2.5 }); 
+
+                    const canvas = document.createElement('canvas');
+                    canvas.className = 'page-canvas';
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise;
+
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = `page ${i % 2 === 0 ? '--left' : '--right'}`;
+                    pageDiv.appendChild(canvas);
+
+                    const pageNumDisplay = document.createElement('div');
+                    pageNumDisplay.className = 'page-number-printed';
+                    pageNumDisplay.innerText = i;
+                    pageDiv.appendChild(pageNumDisplay);
+
+                    bookContainer.appendChild(pageDiv);
+                }
+
+                pageFlip = new St.PageFlip(bookContainer, {
+                    width: targetWidth,
+                    height: targetHeight,
+                    size: 'fixed',
+                    minWidth: 200,
+                    maxWidth: 2000,
+                    minHeight: 300,
+                    maxHeight: 2000,
+                    maxShadowOpacity: 0.85,
+                    showCover: false,
+                    drawShadow: true,
+                    flippingTime: 800,
+                    usePortrait: false,
+                    mobileScrollSupport: false
+                });
+
+                pageFlip.loadFromHTML(document.querySelectorAll('.page'));
+
+                pageFlip.on('flip', (e) => {
+                    pageInput.value = e.data + 1;
+                });
 
                 loadingEl.style.display = 'none';
-                pageWrapper.style.display = 'block';
+                bookContainer.style.display = 'block';
                 controlsEl.style.display = 'flex';
-                applyZoom();
-            } catch (err) {
-                loadingEl.innerText = 'Error loading document. Tiyaking "THE-CONTEMPORARY-WORLD.pdf" ang filename ng PDF sa folder.';
-                console.error(err);
+                pageInput.value = 1;
+
+            } catch (error) {
+                console.error('Error loading PDF flipbook:', error);
+                loadingEl.innerHTML = '⚠️ **Hindi ma-load ang PDF.**<br><small>Tiyaking tama ang PDF filename sa folder.</small>';
             }
         }
 
-        document.getElementById('prev-btn').addEventListener('click', () => {
-            if (pageNum <= 1 || isRendering) return;
-            pageNum--;
-            renderPage(pageNum);
+        document.getElementById('prev-btn').addEventListener('click', () => pageFlip && pageFlip.flipPrev());
+        document.getElementById('next-btn').addEventListener('click', () => pageFlip && pageFlip.flipNext());
+
+        pageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                let targetPage = parseInt(pageInput.value);
+                if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= totalPdfPages) {
+                    pageFlip.flip(targetPage - 1);
+                } else {
+                    pageInput.value = (pageFlip ? pageFlip.getCurrentPageIndex() + 1 : 1);
+                }
+            }
         });
 
-        document.getElementById('next-btn').addEventListener('click', () => {
-            if (pageNum >= pdfDoc.numPages || isRendering) return;
-            pageNum++;
-            renderPage(pageNum);
+        window.addEventListener('keydown', (e) => {
+            if (!modal.classList.contains('active')) return;
+            if (document.activeElement === pageInput) return;
+
+            if (e.key === 'ArrowRight') pageFlip && pageFlip.flipNext();
+            if (e.key === 'ArrowLeft') pageFlip && pageFlip.flipPrev();
+            if (e.key === 'Escape') closeModal();
         });
+
+        function updateZoom() {
+            zoomViewport.style.transform = `scale(${currentZoom})`;
+            zoomValSpan.innerText = `${Math.round(currentZoom * 100)}%`;
+        }
 
         document.getElementById('zoom-in').addEventListener('click', () => {
-            if (currentZoom >= 2.0) return;
-            currentZoom += 0.15;
-            applyZoom();
+            if (currentZoom < 1.6) { currentZoom += 0.15; updateZoom(); }
         });
 
         document.getElementById('zoom-out').addEventListener('click', () => {
-            if (currentZoom <= 0.7) return;
-            currentZoom -= 0.15;
-            applyZoom();
+            if (currentZoom > 0.7) { currentZoom -= 0.15; updateZoom(); }
+        });
+
+        document.getElementById('fullscreen-btn').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
         });
 
         let pointerStartX = 0;
@@ -602,11 +686,12 @@
 
                 if (intersects.length > 0) {
                     modal.classList.add('active');
-                    initPDF();
+                    initFlipbook();
                 }
             }
         });
 
+        // Close Modal
         function closeModal() {
             modal.classList.remove('active');
         }
@@ -616,17 +701,19 @@
             if (e.target === modal) closeModal();
         });
 
+        // Window Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+        // Render Loop
         function animate() {
             requestAnimationFrame(animate);
 
             if (typeof starField !== 'undefined') {
-                starField.rotation.y += 0.0004;
+                starField.rotation.y += 0.0003;
                 starField.rotation.x += 0.0001;
             }
 
