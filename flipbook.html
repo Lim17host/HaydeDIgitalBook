@@ -13,38 +13,39 @@
 
         body {
             overflow: hidden;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: #0f1015;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #eab308;
             color: #ffffff;
         }
 
         .modal-container {
             width: 100vw;
             height: 100vh;
-            background: radial-gradient(circle at center, #232630 0%, #12141c 100%);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            background: radial-gradient(circle at center, #fbbf24 0%, #d97706 100%);
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 28px;
-            background: rgba(15, 16, 21, 0.85);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
+            padding: 14px 28px;
+            background: rgba(15, 16, 21, 0.4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
             z-index: 50;
         }
 
         .modal-title {
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 600;
-            color: #f1f5f9;
+            color: #ffffff;
             display: flex;
             align-items: center;
             gap: 10px;
+            letter-spacing: 0.5px;
         }
 
         .modal-title::before {
@@ -52,56 +53,92 @@
             display: inline-block;
             width: 8px;
             height: 8px;
-            background: #3b82f6;
+            background: #ffffff;
             border-radius: 50%;
-            box-shadow: 0 0 10px #3b82f6;
+            box-shadow: 0 0 10px #ffffff;
         }
 
-        /* Reader Viewport */
         .modal-body {
             flex: 1;
             width: 100%;
-            height: calc(100vh - 65px);
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
-            overflow: auto;
-            padding: 40px;
+            overflow: hidden;
+            padding: 10px 20px 75px 20px; 
         }
 
         #loading {
             position: absolute;
-            color: #94a3b8;
-            font-size: 16px;
-            font-weight: 500;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 600;
+            text-align: center;
+            z-index: 10;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
-        /* Zoom Scaling Area */
         .zoom-viewport {
             transition: transform 0.2s ease-out;
             transform-origin: center center;
             display: flex;
             justify-content: center;
             align-items: center;
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 35px 35px rgba(0, 0, 0, 0.45));
         }
 
-        /* 3D Flipbook Shadow & Book Spine Styling */
         .flipbook-wrapper {
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 0, 0, 0.5);
+            background: transparent;
             border-radius: 4px;
-            overflow: hidden;
-            background: #e2e8f0;
         }
 
+        /* Center Spine Shadows */
         .page {
-            background-color: #ffffff;
+            background-color: #fcfbf9;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            /* Book Spine Shadow Effect */
-            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.08);
+            position: relative;
+        }
+
+        .page.--left::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 35px;
+            height: 100%;
+            background: linear-gradient(to left, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0.05) 40%, rgba(0, 0, 0, 0) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .page.--right::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 35px;
+            height: 100%;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0.05) 40%, rgba(0, 0, 0, 0) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+            pointer-events: none;
+            z-index: 4;
         }
 
         canvas {
@@ -110,7 +147,6 @@
             object-fit: contain;
         }
 
-        /* Controls Panel */
         .controls {
             position: fixed;
             bottom: 20px;
@@ -118,63 +154,67 @@
             transform: translateX(-50%);
             display: flex;
             align-items: center;
-            gap: 8px; /* Dati: 12px */
-            background: rgba(15, 16, 21, 0.92);
-            padding: 6px 14px; /* Dati: 10px 24px */
-            border-radius: 30px; /* Dati: 40px */
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            gap: 8px;
+            background: rgba(15, 16, 21, 0.85);
+            padding: 8px 18px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(12px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
             z-index: 100;
         }
 
         .btn {
-             background: #2563eb;
+            background: rgba(255, 255, 255, 0.15);
             color: white;
-            border: none;
-            padding: 5px 10px; /* Dati: 8px 16px */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
             border-radius: 15px;
             cursor: pointer;
-            font-size: 11px; /* Dati: 13px */
+            font-size: 12px;
             font-weight: 600;
             transition: all 0.2s ease;
-            box-shadow: 0 3px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn:hover { 
+            background: #ffffff; 
+            color: #0f1015;
         }
 
         .btn-zoom {
-            background: #334155;
-            box-shadow: none;
-            padding: 5px 9px; /* Dati: 8px 14px */
+            background: transparent;
+            border: none;
+            padding: 6px 10px;
         }
 
         .page-info {
-            color: #cbd5e1;
-            font-size: 11px; /* Dati: 13px */
+            color: #f1f5f9;
+            font-size: 12px;
             font-weight: 500;
-            min-width: 70px; /* Dati: 90px */
+            min-width: 85px;
             text-align: center;
         }
 
         .divider {
             width: 1px;
-            height: 20px;
+            height: 18px;
             background: rgba(255, 255, 255, 0.2);
             margin: 0 4px;
         }
     </style>
 
-    <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/page-flip@0.6.5/dist/js/page-flip.browser.js"></script>
 </head>
 <body>
 
     <div class="modal-container">
-        <div class="modal-header">
+        <div class="modal-header" id="modal-header">
             <span class="modal-title">The Contemporary World</span>
         </div>
         
-        <div class="modal-body">
-            <div id="loading">Inihahanda ang 3D Book Pages...</div>
+        <div class="modal-body" id="modal-body">
+            <div id="loading">Loading PDF file...</div>
             
             <div class="zoom-viewport" id="zoom-viewport">
                 <div id="book" class="flipbook-wrapper" style="display:none;"></div>
@@ -198,32 +238,30 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
         const pdfUrl = 'UNIT-1-5.pdf';
+        
         let pageFlip = null;
         let currentZoom = 1.0;
 
         async function initFlipbook() {
-            try {
-                const loadingEl = document.getElementById('loading');
-                const bookContainer = document.getElementById('book');
-                const controlsEl = document.getElementById('controls');
+            const loadingEl = document.getElementById('loading');
+            const bookContainer = document.getElementById('book');
+            const controlsEl = document.getElementById('controls');
+            const modalBody = document.getElementById('modal-body');
 
-                // 1. Fetch PDF Document
+            try {
                 const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
                 const numPages = pdf.numPages;
 
-                // 2. Aspect Ratio Computation
                 const firstPage = await pdf.getPage(1);
                 const originalViewport = firstPage.getViewport({ scale: 1.0 });
-                const pdfWidth = originalViewport.width;
-                const pdfHeight = originalViewport.height;
+                
+                const availableHeight = modalBody.clientHeight - 30; 
+                const targetHeight = availableHeight;
+                const targetWidth = (originalViewport.width / originalViewport.height) * targetHeight;
 
-                const targetHeight = 650;
-                const targetWidth = (pdfWidth / pdfHeight) * targetHeight;
-
-                // 3. Render High-Resolution Pages into Canvas Elements
                 for (let i = 1; i <= numPages; i++) {
                     const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: 2.5 }); // High Quality HD Render
+                    const viewport = page.getViewport({ scale: 3.0 }); 
 
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
@@ -236,28 +274,30 @@
                     }).promise;
 
                     const pageDiv = document.createElement('div');
-                    pageDiv.className = 'page';
+                    pageDiv.className = `page ${i % 2 === 0 ? '--left' : '--right'}`;
                     pageDiv.appendChild(canvas);
                     bookContainer.appendChild(pageDiv);
                 }
 
-                // 4. Initialize 3D PageFlip Engine
                 pageFlip = new St.PageFlip(bookContainer, {
                     width: targetWidth,
                     height: targetHeight,
                     size: 'fixed',
                     minWidth: 300,
-                    maxWidth: 1000,
+                    maxWidth: 2000,
                     minHeight: 400,
-                    maxHeight: 1200,
-                    maxShadowOpacity: 0.8,
+                    maxHeight: 2000,
+                    maxShadowOpacity: 0.85,
                     showCover: true,
+                    drawShadow: true,
+                    flippingTime: 1000,
+                    usePortrait: false,
+                    startZIndex: 0,
                     mobileScrollSupport: false
                 });
 
                 pageFlip.loadFromHTML(document.querySelectorAll('.page'));
 
-                // Update Page Number Indicator
                 pageFlip.on('flip', (e) => {
                     document.getElementById('page-num').innerText = `Page ${e.data + 1} of ${numPages}`;
                 });
@@ -269,20 +309,13 @@
 
             } catch (error) {
                 console.error('Error loading PDF flipbook:', error);
-                document.getElementById('loading').innerText = 'Nagkaroon ng problema sa pag-load ng PDF.';
+                loadingEl.innerHTML = '⚠️ **Failed to load PDF.**<br><small>Please make sure the PDF filename is correct.</small>';
             }
         }
 
-        // Navigation Controls
-        document.getElementById('prev-btn').addEventListener('click', () => {
-            if (pageFlip) pageFlip.flipPrev();
-        });
+        document.getElementById('prev-btn').addEventListener('click', () => pageFlip && pageFlip.flipPrev());
+        document.getElementById('next-btn').addEventListener('click', () => pageFlip && pageFlip.flipNext());
 
-        document.getElementById('next-btn').addEventListener('click', () => {
-            if (pageFlip) pageFlip.flipNext();
-        });
-
-        // Smooth Zooming System
         const zoomViewport = document.getElementById('zoom-viewport');
         const zoomValSpan = document.getElementById('zoom-val');
 
@@ -292,17 +325,11 @@
         }
 
         document.getElementById('zoom-in').addEventListener('click', () => {
-            if (currentZoom < 1.8) {
-                currentZoom += 0.15;
-                updateZoom();
-            }
+            if (currentZoom < 1.7) { currentZoom += 0.15; updateZoom(); }
         });
 
         document.getElementById('zoom-out').addEventListener('click', () => {
-            if (currentZoom > 0.7) {
-                currentZoom -= 0.15;
-                updateZoom();
-            }
+            if (currentZoom > 0.7) { currentZoom -= 0.15; updateZoom(); }
         });
 
         initFlipbook();
