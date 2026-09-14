@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>3D Thesis Book - Interactive Flipbook Reader Pro</title>
     <style>
         * {
@@ -16,7 +16,7 @@
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background: #090a0f;
             color: #ffffff;
-            touch-action: none; 
+            touch-action: manipulation; 
             user-select: none;
         }
 
@@ -79,19 +79,6 @@
             overflow: hidden;
             background: radial-gradient(circle at 50% 40%, #1e1b4b 0%, #090a0f 85%);
             position: relative;
-        }
-
-        .modal-container::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70vw;
-            height: 70vh;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
-            pointer-events: none;
-            z-index: 1;
         }
 
         .modal-header {
@@ -164,6 +151,7 @@
             overflow: hidden;
             padding: 0;
             z-index: 2;
+            touch-action: none;
         }
 
         #loading {
@@ -182,7 +170,7 @@
         }
 
         .zoom-viewport {
-            transition: transform 0.2s ease-out;
+            transition: transform 0.1s linear;
             transform-origin: center center;
             display: flex;
             justify-content: center;
@@ -190,6 +178,7 @@
             width: 100%;
             height: 100%;
             filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.85));
+            touch-action: none;
         }
 
         .flipbook-wrapper {
@@ -264,7 +253,6 @@
             object-fit: contain;
         }
 
-        /* Controls Panel System */
         .controls {
             position: fixed;
             bottom: 16px;
@@ -341,14 +329,13 @@
             margin: 0 4px;
         }
 
-        /* Responsive Styles for Mobile Screens */
         @media (max-width: 600px) {
             .instructions {
                 font-size: 11px;
                 padding: 6px 14px;
                 top: 10px;
             }
-            .btn-zoom, #zoom-val, .divider, #fullscreen-btn {
+            #fullscreen-btn {
                 display: none !important;
             }
             .modal-title {
@@ -401,7 +388,7 @@
                     <div class="divider"></div>
                     
                     <button class="btn btn-zoom" id="zoom-out">− Zoom</button>
-                    <span id="zoom-val" style="font-size: 12px; color: #f1f5f9; min-width:40px; text-align: center;">100%</span>
+                    <span id="zoom-val" style="font-size: 12px; color: #f1f5f9; min-width:36px; text-align: center;">100%</span>
                     <button class="btn btn-zoom" id="zoom-in">+ Zoom</button>
                 </div>
             </div>
@@ -522,6 +509,7 @@
         const pdfUrl = 'THE-CONTEMPORARY-WORLD.pdf'; 
         let pageFlip = null;
         let currentZoom = 1.0;
+        let panX = 0, panY = 0;
         let totalPdfPages = 0;
 
         const modal = document.getElementById('pdf-modal');
@@ -582,7 +570,7 @@
                 pageFlip = new St.PageFlip(bookContainer, {
                     width: targetWidth,
                     height: targetHeight,
-                    size: 'stretch',
+                    size: isMobile ? 'fixed' : 'stretch',
                     minWidth: 150,
                     maxWidth: 1000,
                     minHeight: 250,
@@ -612,6 +600,55 @@
             }
         }
 
+        let initialDist = 0;
+        let startTouchX = 0, startTouchY = 0;
+
+        function updateTransform() {
+            zoomViewport.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+            zoomValSpan.innerText = `${Math.round(currentZoom * 100)}%`;
+        }
+
+        const modalBodyEl = document.getElementById('modal-body');
+
+        modalBodyEl.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                initialDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            } else if (e.touches.length === 1 && currentZoom > 1.0) {
+                startTouchX = e.touches[0].clientX - panX;
+                startTouchY = e.touches[0].clientY - panY;
+            }
+        });
+
+        modalBodyEl.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const factor = dist / initialDist;
+                initialDist = dist;
+
+                currentZoom = Math.min(Math.max(currentZoom * factor, 0.9), 3.0);
+                if (currentZoom <= 1.0) { panX = 0; panY = 0; }
+                updateTransform();
+            } else if (e.touches.length === 1 && currentZoom > 1.0) {
+                panX = e.touches[0].clientX - startTouchX;
+                panY = e.touches[0].clientY - startTouchY;
+                updateTransform();
+            }
+        });
+
+        modalBodyEl.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2 && currentZoom < 1.0) {
+                currentZoom = 1.0;
+                panX = 0; panY = 0;
+                updateTransform();
+            }
+        });
+
         document.getElementById('prev-btn').addEventListener('click', () => pageFlip && pageFlip.flipPrev());
         document.getElementById('next-btn').addEventListener('click', () => pageFlip && pageFlip.flipNext());
 
@@ -635,17 +672,16 @@
             if (e.key === 'Escape') closeModal();
         });
 
-        function updateZoom() {
-            zoomViewport.style.transform = `scale(${currentZoom})`;
-            zoomValSpan.innerText = `${Math.round(currentZoom * 100)}%`;
-        }
-
         document.getElementById('zoom-in').addEventListener('click', () => {
-            if (currentZoom < 1.6) { currentZoom += 0.15; updateZoom(); }
+            if (currentZoom < 2.5) { currentZoom += 0.2; updateTransform(); }
         });
 
         document.getElementById('zoom-out').addEventListener('click', () => {
-            if (currentZoom > 0.7) { currentZoom -= 0.15; updateZoom(); }
+            if (currentZoom > 0.8) { 
+                currentZoom -= 0.2; 
+                if (currentZoom <= 1.0) { panX = 0; panY = 0; }
+                updateTransform(); 
+            }
         });
 
         document.getElementById('fullscreen-btn').addEventListener('click', () => {
@@ -678,6 +714,9 @@
 
         function closeModal() {
             modal.classList.remove('active');
+            currentZoom = 1.0;
+            panX = 0; panY = 0;
+            updateTransform();
         }
 
         closeModalBtn.addEventListener('click', closeModal);
